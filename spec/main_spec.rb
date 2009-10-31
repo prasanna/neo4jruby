@@ -37,6 +37,7 @@ describe "neo" do
 
       KNOWS = MyRelationshipType.new("KNOWS")
       CODED_BY = MyRelationshipType.new("CODED_BY")
+      LOVES = MyRelationshipType.new("LOVES")
 
       relationship = mr_anderson.create_relationship_to( morpheus, KNOWS)
       mr_anderson.create_relationship_to(trinity, KNOWS)
@@ -44,11 +45,21 @@ describe "neo" do
       morpheus.create_relationship_to(cypher, KNOWS)
       cypher.create_relationship_to(agent_smith, KNOWS)
       agent_smith.create_relationship_to(architect, CODED_BY)
+      trinity.create_relationship_to(mr_anderson, LOVES)
+      
+      
+      class LoveReturnableEvaluator
+        include ReturnableEvaluator
+        def isReturnableNode( pos ) 
+          return pos.currentNode().hasRelationship(LOVES, Direction::OUTGOING)
+        end
+      end
+      
       
       friends_traverser = mr_anderson.traverse( 
         Traverser::Order::BREADTH_FIRST, 
         StopEvaluator::END_OF_NETWORK, 
-        ReturnableEvaluator::ALL_BUT_START_NODE, 
+        LoveReturnableEvaluator.new,
         KNOWS, 
         Direction::OUTGOING )
         
