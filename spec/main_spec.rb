@@ -27,13 +27,13 @@ describe "neo" do
       trinity.set_property "name", "Trinity"
       
       cypher = neo.create_node
-      cypher.set_property "name", "cypher"
+      cypher.set_property "name", "Cypher"
       
       agent_smith = neo.create_node
-      agent_smith.set_property "name", "agent_smith"
+      agent_smith.set_property "name", "Agent Smith"
       
       architect = neo.create_node
-      architect.set_property "name", "architect"
+      architect.set_property "name", "Architect"
 
       KNOWS = MyRelationshipType.new("KNOWS")
       CODED_BY = MyRelationshipType.new("CODED_BY")
@@ -47,6 +47,24 @@ describe "neo" do
       agent_smith.create_relationship_to(architect, CODED_BY)
       trinity.create_relationship_to(mr_anderson, LOVES)
       
+      friends_traverser = mr_anderson.traverse( 
+        Traverser::Order::BREADTH_FIRST, 
+        StopEvaluator::END_OF_NETWORK, 
+        ReturnableEvaluator::ALL_BUT_START_NODE, 
+        KNOWS, 
+        Direction::OUTGOING )
+      
+      expected_friends = [
+        {:depth => 1, :name => "Morpheus"},
+        {:depth => 1, :name => "Trinity"},
+        {:depth => 2, :name => "Cypher"},
+        {:depth => 3, :name => "Agent Smith"}]
+
+      friends_traverser.each_with_index do |friend, i|
+        friends_traverser.current_position.depth.should == expected_friends[i][:depth]
+        friend.get_property('name').should == expected_friends[i][:name]
+      end
+      
       
       class LoveReturnableEvaluator
         include ReturnableEvaluator
@@ -56,16 +74,16 @@ describe "neo" do
       end
       
       
-      friends_traverser = mr_anderson.traverse( 
+      love_traverser = mr_anderson.traverse( 
         Traverser::Order::BREADTH_FIRST, 
         StopEvaluator::END_OF_NETWORK, 
         LoveReturnableEvaluator.new,
         KNOWS, 
         Direction::OUTGOING )
         
-      friends_traverser.each do |friend|
-        puts "Depth: #{friends_traverser.current_position.depth}"
-        puts "Name: #{friend.get_property('name')}"
+      love_traverser.each do |lover|
+        love_traverser.current_position.depth.should == 1
+        lover.get_property('name').should == "Trinity"
       end
       
       tx.success
